@@ -259,3 +259,184 @@ button:hover {
     font-size: 24px;
   }
 }
+
+/* Race */
+
+.room-bar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--muted);
+  margin: 24px 0 20px;
+}
+
+.room-bar strong {
+  color: var(--text);
+  letter-spacing: 2px;
+}
+
+.room-bar code {
+  color: var(--accent);
+  user-select: all;
+}
+
+.players {
+  list-style: none;
+  margin: 0 0 28px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.player {
+  display: grid;
+  grid-template-columns: 48px minmax(120px, 200px) 1fr 80px;
+  align-items: center;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.player.me {
+  color: var(--text);
+}
+
+.player .place {
+  color: var(--good);
+  font-weight: 800;
+}
+
+.player .name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.player .track {
+  height: 8px;
+  background: var(--line);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.player .car {
+  display: block;
+  height: 100%;
+  background: var(--dim);
+  border-radius: 4px;
+  transition: width 200ms ease-out;
+}
+
+.player.me .car {
+  background: var(--accent);
+}
+
+.player .wpm {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.phase-note {
+  color: var(--muted);
+  margin: 12px 0 20px;
+}
+
+.countdown {
+  font-size: 96px;
+  font-weight: 800;
+  color: var(--accent);
+  text-align: center;
+  margin: 24px 0 8px;
+}
+
+.countdown + .phase-note {
+  text-align: center;
+}
+
+button.primary,
+.cta {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--bg);
+  background: var(--accent);
+  border: none;
+  border-radius: 8px;
+  padding: 12px 22px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+button.primary:hover,
+.cta:hover {
+  color: var(--bg);
+  filter: brightness(1.1);
+}
+
+.result button.primary {
+  margin-top: 16px;
+}
+
+/* Lobby */
+
+.lobby {
+  margin-top: 40px;
+  max-width: 560px;
+}
+
+.lobby h1 {
+  font-size: 36px;
+  margin: 0 0 12px;
+}
+
+.lead {
+  color: var(--muted);
+  line-height: 1.6;
+  margin-bottom: 32px;
+}
+
+.join {
+  display: flex;
+  gap: 10px;
+  margin-top: 28px;
+}
+
+.join input {
+  font-family: var(--mono);
+  font-size: 15px;
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 14px;
+  width: 180px;
+  letter-spacing: 2px;
+}
+
+.join input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.error {
+  color: var(--bad);
+}
+
+.notice {
+  margin-top: 40px;
+  color: var(--muted);
+}
+
+@media (max-width: 640px) {
+  .player {
+    grid-template-columns: 40px 1fr 60px;
+  }
+
+  .player .track {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}

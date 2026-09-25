@@ -28,6 +28,7 @@ defmodule PipeRacerWeb.MainLayout do
           <Link to={PipeRacerWeb.SoloPage} class="brand"><span class="pipe">|&gt;</span> pipe_racer</Link>
           <nav>
             <Link to={PipeRacerWeb.SoloPage}>solo</Link>
+            <Link to={PipeRacerWeb.LobbyPage}>race</Link>
           </nav>
         </header>
         <main>
