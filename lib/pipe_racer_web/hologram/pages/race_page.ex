@@ -103,7 +103,7 @@ defmodule PipeRacerWeb.RacePage do
               <strong>{Typing.wpm(@game, @now)} wpm</strong> at {Typing.accuracy(@game)}% accuracy
             </div>
             {%if @room_status == :racing}
-              <div class="hint">Waiting for the others to finish...</div>
+              <div class="hint">Waiting for the others. The race ends a minute after the first finish.</div>
             {%else}
               <button class="primary" $click={command: :start, params: %{room: @room}}>race again</button>
             {/if}
@@ -155,9 +155,8 @@ defmodule PipeRacerWeb.RacePage do
     end
   end
 
-  # Runs once the page is live in the browser. Joining from a command also
-  # means the join broadcast comes from a command: one queued in init/3
-  # sometimes never reached the other tabs in testing.
+  # Runs once the page is live in the browser, because the tab id lives in
+  # the browser's sessionStorage.
   def action(:join, _params, component) do
     me = tab_id()
 
@@ -200,8 +199,9 @@ defmodule PipeRacerWeb.RacePage do
     put_broadcast(server, {:race, code}, :room_updated, room: room)
   end
 
-  # Keeps this tab in the room and, because broadcasts are not guaranteed to
-  # arrive, also hands the tab the latest room state every time.
+  # Keeps this tab in the room. Hologram realtime is fire-and-forget, so a tab
+  # that was asleep or offline misses broadcasts; the reply also hands this
+  # tab the latest room state to catch it up.
   def command(:ping, %{room: code, player: player}, server) do
     {:ok, room, changed?} = Room.ping(code, player)
 
