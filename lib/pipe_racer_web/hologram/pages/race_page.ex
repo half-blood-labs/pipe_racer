@@ -65,7 +65,7 @@ defmodule PipeRacerWeb.RacePage do
           <div class="share">invite: <code>{@share_url}</code></div>
         </div>
 
-        <PlayerList players={@players} me={@me} />
+        <PlayerList players={@players} me={@me} race_on={@room_status == :racing} />
 
         {%if @phase == :lobby}
           <div class="phase-note">{lobby_note(@players)}</div>
