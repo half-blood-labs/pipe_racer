@@ -10,7 +10,7 @@ defmodule PipeRacer.MixProject do
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       deps: deps(),
-      compilers: [:phoenix_live_view] ++ Mix.compilers() ++ [:hologram],
+      compilers: [:phoenix_live_view] ++ Mix.compilers() ++ hologram_compilers(Mix.env()),
       listeners: [Phoenix.CodeReloader]
     ]
   end
@@ -30,6 +30,12 @@ defmodule PipeRacer.MixProject do
       preferred_envs: [precommit: :test]
     ]
   end
+
+  # Hologram writes its JS bundles to priv/static/hologram in every env, so a
+  # test compile would overwrite the bundles a running `mix holo` serves and
+  # send the dev page into a live-reload loop. The tests don't need bundles.
+  defp hologram_compilers(:test), do: []
+  defp hologram_compilers(_env), do: [:hologram]
 
   # Specifies which paths to compile per environment.
   defp elixirc_paths(:test), do: ["lib", "test/support"]
