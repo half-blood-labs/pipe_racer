@@ -8,6 +8,7 @@ defmodule PipeRacerWeb.RacePage do
   alias PipeRacer.Typing
   alias PipeRacerWeb.Components.CodeView
   alias PipeRacerWeb.Components.KeyCapture
+  alias PipeRacerWeb.Components.MistakeHint
   alias PipeRacerWeb.Components.PlayerList
   alias PipeRacerWeb.Components.Stats
   alias PipeRacerWeb.Keys
@@ -89,7 +90,12 @@ defmodule PipeRacerWeb.RacePage do
             seconds={div(Typing.elapsed_ms(@game, @now), 1000)}
             progress={Typing.progress(@game)}
           />
-          <CodeView segments={Typing.segments(@game)} finished={Typing.finished?(@game)} />
+          <CodeView
+        segments={Typing.segments(@game)}
+        finished={Typing.finished?(@game)}
+        blocked={Typing.blocked?(@game)}
+      />
+      <MistakeHint mistake={Typing.mistake(@game)} />
         {/if}
 
         {%if @phase == :done}

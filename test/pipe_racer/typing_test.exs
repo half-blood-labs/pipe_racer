@@ -38,6 +38,33 @@ defmodule PipeRacer.TypingTest do
     assert game.pos == 8
   end
 
+  test "mistake reports the key pressed and the key the snippet wanted" do
+    game = Typing.new("f(x)") |> type_all("f9")
+
+    assert Typing.mistake(game) == %{typed: "9", expected: "(", blocked: false}
+
+    game = Typing.backspace(game)
+    assert Typing.mistake(game) == nil
+  end
+
+  test "mistake names invisible keys" do
+    game = Typing.new("a b\nc") |> type_all("ax")
+    assert Typing.mistake(game).expected == "Space"
+
+    game = Typing.new("ab\nc") |> type_all("ab ")
+    assert Typing.mistake(game) == %{typed: "Space", expected: "Enter", blocked: false}
+  end
+
+  test "typing is blocked after the wrong run, or at the end with a mistake" do
+    game = Typing.new(String.duplicate("a", 20)) |> type_all(String.duplicate("b", 8))
+    assert Typing.blocked?(game)
+    assert Typing.mistake(game).blocked
+
+    game = Typing.new("ab") |> type_all("xb")
+    assert game.pos == 2
+    assert Typing.blocked?(game)
+  end
+
   test "Enter skips the next line's indentation" do
     game = Typing.new("do\n  x\nend") |> type_all("do\n")
 

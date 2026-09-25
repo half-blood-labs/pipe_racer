@@ -6,6 +6,7 @@ defmodule PipeRacerWeb.SoloPage do
   alias PipeRacerWeb.Keys
   alias PipeRacerWeb.Components.CodeView
   alias PipeRacerWeb.Components.KeyCapture
+  alias PipeRacerWeb.Components.MistakeHint
   alias PipeRacerWeb.Components.Stats
 
   route "/"
@@ -35,7 +36,12 @@ defmodule PipeRacerWeb.SoloPage do
         progress={Typing.progress(@game)}
       />
 
-      <CodeView segments={Typing.segments(@game)} finished={Typing.finished?(@game)} />
+      <CodeView
+        segments={Typing.segments(@game)}
+        finished={Typing.finished?(@game)}
+        blocked={Typing.blocked?(@game)}
+      />
+      <MistakeHint mistake={Typing.mistake(@game)} />
 
       {%if Typing.finished?(@game)}
         <div class="result">
@@ -45,10 +51,11 @@ defmodule PipeRacerWeb.SoloPage do
           <div class="hint">Press <kbd>Enter</kbd> for the next snippet, <kbd>Esc</kbd> to retry.</div>
         </div>
       {%else}
-        {%if Typing.started?(@game)}
-          <div class="hint">Type the code. Mistakes must be fixed with <kbd>Backspace</kbd>. <kbd>Esc</kbd> restarts.</div>
-        {%else}
+        {%if not Typing.started?(@game)}
           <div class="hint">Start typing to start the clock. <kbd>Enter</kbd> auto-indents.</div>
+        {/if}
+        {%if Typing.started?(@game) and Typing.mistake(@game) == nil}
+          <div class="hint">Type the code. Mistakes must be fixed with <kbd>Backspace</kbd>. <kbd>Esc</kbd> restarts.</div>
         {/if}
       {/if}
 

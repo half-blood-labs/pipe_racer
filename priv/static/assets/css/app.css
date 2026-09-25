@@ -440,3 +440,35 @@ button.primary:hover,
     grid-row: 2;
   }
 }
+
+/* Mistakes */
+
+.code.blocked {
+  border-color: var(--bad);
+  animation: shake 240ms ease-in-out;
+}
+
+@keyframes shake {
+  25% {
+    transform: translateX(-6px);
+  }
+
+  75% {
+    transform: translateX(6px);
+  }
+}
+
+.mistake {
+  color: var(--muted);
+  font-size: 14px;
+  margin-top: 16px;
+}
+
+.mistake kbd {
+  color: var(--bad);
+  border-color: var(--bad-soft);
+}
+
+.mistake.blocked strong {
+  color: var(--bad);
+}

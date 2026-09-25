@@ -23,6 +23,7 @@ defmodule PipeRacer.Typing do
       len: length(chars),
       pos: 0,
       first_error: nil,
+      wrong_char: nil,
       keystrokes: 0,
       mistakes: 0,
       started_at: nil,
@@ -35,13 +36,32 @@ defmodule PipeRacer.Typing do
   def started?(game), do: game.started_at != nil
 
   def type(game, char, now) do
-    cond do
-      finished?(game) -> game
-      game.pos >= game.len -> game
-      game.first_error != nil and game.pos - game.first_error >= @max_wrong_run -> game
-      true -> do_type(game, char, now)
-    end
+    if finished?(game) or blocked?(game), do: game, else: do_type(game, char, now)
   end
+
+  @doc "True when typing is paused until the player backspaces to the mistake."
+  def blocked?(game) do
+    game.first_error != nil and
+      (game.pos >= game.len or game.pos - game.first_error >= @max_wrong_run)
+  end
+
+  @doc """
+  What went wrong, for showing the player: the key they pressed and the one
+  the snippet wanted at their first mistake. `nil` when there is no mistake.
+  """
+  def mistake(%{first_error: nil}), do: nil
+
+  def mistake(game) do
+    %{
+      typed: key_name(game.wrong_char),
+      expected: key_name(Enum.at(game.chars, game.first_error)),
+      blocked: blocked?(game)
+    }
+  end
+
+  defp key_name(" "), do: "Space"
+  defp key_name("\n"), do: "Enter"
+  defp key_name(char), do: char
 
   defp do_type(game, char, now) do
     expected = Enum.at(game.chars, game.pos)
@@ -61,7 +81,7 @@ defmodule PipeRacer.Typing do
         |> maybe_finish(now)
 
       game.first_error == nil ->
-        %{game | pos: game.pos + 1, first_error: game.pos}
+        %{game | pos: game.pos + 1, first_error: game.pos, wrong_char: char}
 
       true ->
         %{game | pos: game.pos + 1}
@@ -101,10 +121,11 @@ defmodule PipeRacer.Typing do
       true ->
         pos = game.pos - 1
 
-        first_error =
-          if game.first_error != nil and pos <= game.first_error, do: nil, else: game.first_error
-
-        %{game | pos: pos, first_error: first_error}
+        if game.first_error != nil and pos <= game.first_error do
+          %{game | pos: pos, first_error: nil, wrong_char: nil}
+        else
+          %{game | pos: pos}
+        end
     end
   end
 
