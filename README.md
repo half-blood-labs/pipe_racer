@@ -17,8 +17,8 @@ round trip, and the server only syncs the race.
 | Progress sync | Hologram commands + realtime broadcasts | `lib/pipe_racer_web/hologram/pages/race_page.ex` |
 
 The typing state stores only the cursor position and the index of the first
-mistake, so each keystroke is constant time and the snippet renders as four
-spans (correct, wrong, cursor, pending) rather than one per character.
+mistake, not what was typed, and the snippet renders as four spans (correct,
+wrong, cursor, pending) rather than one per character.
 
 ## Rules
 
