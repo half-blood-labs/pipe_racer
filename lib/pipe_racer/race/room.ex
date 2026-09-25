@@ -76,7 +76,7 @@ defmodule PipeRacer.Race.Room do
       true ->
         player = %{
           id: player_id,
-          name: name,
+          name: unique_name(state, name),
           progress: 0,
           wpm: 0,
           place: nil,
@@ -156,6 +156,18 @@ defmodule PipeRacer.Race.Room do
     else
       state
     end
+  end
+
+  # Two tabs of one browser share a session name; keep them apart.
+  defp unique_name(state, name) do
+    taken = state.players |> Map.values() |> MapSet.new(& &1.name)
+
+    Stream.iterate(1, &(&1 + 1))
+    |> Stream.map(fn
+      1 -> name
+      n -> "#{name}-#{n}"
+    end)
+    |> Enum.find(&(not MapSet.member?(taken, &1)))
   end
 
   defp prune(state) do

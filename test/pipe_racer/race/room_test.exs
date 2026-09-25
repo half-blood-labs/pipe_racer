@@ -54,6 +54,13 @@ defmodule PipeRacer.Race.RoomTest do
     assert %{progress: 0} = Enum.find(room.players, &(&1.name == "late"))
   end
 
+  test "two tabs with the same session name get distinct names", %{code: code} do
+    {:ok, _} = Room.join(code, "tab-a", "swift-atom")
+    {:ok, room} = Room.join(code, "tab-b", "swift-atom")
+
+    assert room.players |> Enum.map(& &1.name) |> Enum.sort() == ["swift-atom", "swift-atom-2"]
+  end
+
   test "a room is full at eight players", %{code: code} do
     for i <- 1..8, do: {:ok, _} = Room.join(code, "tab-#{i}", "p#{i}")
 
