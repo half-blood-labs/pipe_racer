@@ -36,7 +36,9 @@ if config_env() == :prod do
       You can generate one by calling: mix phx.gen.secret
       """
 
-  host = System.get_env("PHX_HOST") || "example.com"
+  # Render sets RENDER_EXTERNAL_HOSTNAME to the service's public hostname.
+  host =
+    System.get_env("PHX_HOST") || System.get_env("RENDER_EXTERNAL_HOSTNAME") || "example.com"
 
   config :pipe_racer, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
 
