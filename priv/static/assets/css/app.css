@@ -1,1 +1,261 @@
-/* This file is for your main application CSS */
+:root {
+  --bg: #15121c;
+  --panel: #1d1927;
+  --line: #2c2639;
+  --text: #ece8f4;
+  --muted: #6f6782;
+  --dim: #4d4660;
+  --accent: #a67ce8;
+  --accent-soft: #a67ce833;
+  --bad: #ff6b81;
+  --bad-soft: #ff6b8133;
+  --good: #7ee0a8;
+  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+a {
+  color: var(--accent);
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 960px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+
+.brand {
+  color: var(--text);
+  text-decoration: none;
+  font-weight: 800;
+  font-size: 20px;
+  letter-spacing: -0.5px;
+}
+
+.brand .pipe {
+  color: var(--accent);
+}
+
+.topbar nav {
+  display: flex;
+  gap: 20px;
+}
+
+.topbar nav a {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.topbar nav a:hover {
+  color: var(--text);
+}
+
+main {
+  flex: 1;
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.footer {
+  text-align: center;
+  color: var(--dim);
+  font-size: 12px;
+  padding: 32px 16px;
+}
+
+/* Arena */
+
+.arena {
+  margin-top: 24px;
+}
+
+.snippet-title {
+  color: var(--muted);
+  margin-bottom: 20px;
+}
+
+.snippet-title .hash {
+  color: var(--dim);
+}
+
+.stats {
+  display: flex;
+  gap: 40px;
+  margin-bottom: 12px;
+}
+
+.stat {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.stat .value {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.stat .label {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.progress {
+  height: 3px;
+  background: var(--line);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 28px;
+}
+
+.progress .bar {
+  height: 100%;
+  background: var(--accent);
+  transition: width 120ms ease-out;
+}
+
+.code {
+  margin: 0;
+  padding: 28px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  font-family: var(--mono);
+  font-size: 22px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-all;
+  /* Ligatures draw >= or |> as one glyph; players must see every key. */
+  font-variant-ligatures: none;
+  font-feature-settings: "calt" 0, "liga" 0;
+}
+
+.code .ok {
+  color: var(--text);
+}
+
+.code .bad {
+  color: var(--bad);
+  background: var(--bad-soft);
+  border-radius: 3px;
+}
+
+.code .todo {
+  color: var(--dim);
+}
+
+.code .cursor {
+  color: var(--text);
+  background: var(--accent-soft);
+  border-left: 2px solid var(--accent);
+  margin-left: -2px;
+  animation: blink 1s steps(1) infinite;
+}
+
+.code .cursor:empty {
+  display: none;
+}
+
+.code.finished {
+  border-color: var(--good);
+}
+
+.code.finished .ok {
+  color: var(--good);
+}
+
+@keyframes blink {
+  50% {
+    border-left-color: transparent;
+  }
+}
+
+.hint {
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 16px;
+}
+
+kbd {
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 1px 6px;
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  color: var(--text);
+}
+
+.result {
+  margin-top: 20px;
+}
+
+.result-line {
+  font-size: 20px;
+}
+
+.result-line strong {
+  color: var(--good);
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+button {
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--text);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 16px;
+  cursor: pointer;
+}
+
+button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+@media (max-width: 640px) {
+  .code {
+    font-size: 15px;
+    padding: 18px;
+  }
+
+  .stats {
+    gap: 20px;
+  }
+
+  .stat .value {
+    font-size: 24px;
+  }
+}
