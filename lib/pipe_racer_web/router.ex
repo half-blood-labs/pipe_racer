@@ -14,6 +14,8 @@ defmodule PipeRacerWeb.Router do
     plug :accepts, ["json"]
   end
 
+  get "/health", PipeRacerWeb.HealthController, :show
+
   # Other scopes may use custom stacks.
   # scope "/api", PipeRacerWeb do
   #   pipe_through :api
