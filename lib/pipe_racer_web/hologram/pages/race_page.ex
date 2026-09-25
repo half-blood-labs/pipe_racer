@@ -19,7 +19,8 @@ defmodule PipeRacerWeb.RacePage do
   layout PipeRacerWeb.MainLayout, page_title: "Pipe Racer · race"
 
   @tick_ms 250
-  @ping_ms 15_000
+  # Each tab pings the room this often; the reply also resyncs the tab.
+  @ping_ms 5_000
   @countdown 3
   # Progress is sent to the room in steps of this many percent, not per key.
   @report_step 4
@@ -36,14 +37,9 @@ defmodule PipeRacerWeb.RacePage do
         component
         |> put_state(:share_url, PipeRacerWeb.Endpoint.url() <> "/race/" <> code)
         |> join_room(room)
-        |> put_action(name: :ping, delay: @ping_ms)
+        |> put_action(:announce)
 
-      server =
-        server
-        |> put_subscription({:race, code})
-        |> put_broadcast({:race, code}, :room_updated, room: room)
-
-      {component, server}
+      {component, put_subscription(server, {:race, code})}
     else
       false ->
         {put_state(component, :error, "That room code doesn't look right."), server}
@@ -154,6 +150,15 @@ defmodule PipeRacerWeb.RacePage do
     end
   end
 
+  # Tell the room about the new player once the page is live in the browser.
+  # A broadcast queued in init/3 sometimes never reached the other tabs in
+  # testing; a broadcast from a command always did.
+  def action(:announce, _params, component) do
+    component
+    |> put_command(:announce, room: component.state.room)
+    |> put_action(name: :ping, delay: @ping_ms)
+  end
+
   def action(:ping, _params, component) do
     component
     |> put_command(:ping, room: component.state.room)
@@ -167,30 +172,40 @@ defmodule PipeRacerWeb.RacePage do
     put_broadcast(server, {:race, code}, :room_updated, room: room)
   end
 
+  def command(:announce, %{room: code}, server) do
+    room = Room.snapshot(code)
+    put_broadcast(server, {:race, code}, :room_updated, room: room)
+  end
+
   def command(:report, %{room: code, progress: progress, wpm: wpm}, server) do
     {:ok, room} = Room.report(code, server.instance_id, progress, wpm)
     put_broadcast(server, {:race, code}, :room_updated, room: room)
   end
 
+  # Keeps this tab in the room and, because broadcasts are not guaranteed to
+  # arrive, also hands the tab the latest room state every time.
   def command(:ping, %{room: code}, server) do
     {:ok, room, changed?} = Room.ping(code, server.instance_id)
 
-    cond do
-      # Dropped while the tab slept; come back in.
-      not Enum.any?(room.players, &(&1.id == server.instance_id)) ->
-        name = get_session(server, :name) || Race.random_name()
+    {room, server} =
+      cond do
+        # Dropped while the tab slept; come back in.
+        not Enum.any?(room.players, &(&1.id == server.instance_id)) ->
+          name = get_session(server, :name) || Race.random_name()
 
-        case Room.join(code, server.instance_id, name) do
-          {:ok, room} -> put_broadcast(server, {:race, code}, :room_updated, room: room)
-          {:error, :full} -> server
-        end
+          case Room.join(code, server.instance_id, name) do
+            {:ok, room} -> {room, put_broadcast(server, {:race, code}, :room_updated, room: room)}
+            {:error, :full} -> {room, server}
+          end
 
-      changed? ->
-        put_broadcast(server, {:race, code}, :room_updated, room: room)
+        changed? ->
+          {room, put_broadcast(server, {:race, code}, :room_updated, room: room)}
 
-      true ->
-        server
-    end
+        true ->
+          {room, server}
+      end
+
+    put_action(server, :room_updated, room: room)
   end
 
   # Helpers
