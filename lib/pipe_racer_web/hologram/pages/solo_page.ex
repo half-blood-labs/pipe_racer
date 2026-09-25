@@ -107,6 +107,10 @@ defmodule PipeRacerWeb.SoloPage do
     apply_input(component, fn game, _now -> Typing.backspace(game) end)
   end
 
+  defp handle_key(component, :backspace_to_mistake) do
+    apply_input(component, fn game, _now -> Typing.backspace_to_mistake(game) end)
+  end
+
   defp handle_key(component, {:char, char}) do
     apply_input(component, &Typing.type(&1, char, &2))
   end

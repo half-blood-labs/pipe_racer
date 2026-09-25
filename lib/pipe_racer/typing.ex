@@ -13,7 +13,7 @@ defmodule PipeRacer.Typing do
   """
 
   # How far past a mistake the player may keep typing before input stops.
-  @max_wrong_run 8
+  @max_wrong_run 5
 
   def new(code) do
     chars = String.graphemes(code)
@@ -55,7 +55,8 @@ defmodule PipeRacer.Typing do
     %{
       typed: key_name(game.wrong_char),
       expected: key_name(Enum.at(game.chars, game.first_error)),
-      blocked: blocked?(game)
+      blocked: blocked?(game),
+      backspaces: game.pos - game.first_error
     }
   end
 
@@ -126,6 +127,17 @@ defmodule PipeRacer.Typing do
         else
           %{game | pos: pos}
         end
+    end
+  end
+
+  @doc "Deletes back to the first mistake in one go (Option/Ctrl+Backspace)."
+  def backspace_to_mistake(%{first_error: nil} = game), do: backspace(game)
+
+  def backspace_to_mistake(game) do
+    if finished?(game) do
+      game
+    else
+      %{game | pos: game.first_error, first_error: nil, wrong_char: nil}
     end
   end
 

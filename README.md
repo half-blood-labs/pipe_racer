@@ -23,6 +23,8 @@ spans (correct, wrong, cursor, pending) rather than one per character.
 ## Rules
 
 - Mistakes turn red and must be fixed with Backspace before you can go on.
+  Everything after the first mistake stays red until you delete back to it;
+  Option (or Ctrl/Cmd) + Backspace jumps there in one press.
 - Enter auto-skips the next line's indentation, like an editor.
 - In a race, progress is sent to the room every 4%, not on every key.
 

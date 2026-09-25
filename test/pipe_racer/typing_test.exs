@@ -35,13 +35,41 @@ defmodule PipeRacer.TypingTest do
     game = Typing.new(String.duplicate("a", 20)) |> type_all(String.duplicate("b", 20))
 
     assert game.first_error == 0
-    assert game.pos == 8
+    assert game.pos == 5
+  end
+
+  test "keys typed correctly after a mistake stay wrong until deleted" do
+    game = Typing.new("{:ok, order}") |> type_all("[:ok,")
+
+    assert Typing.segments(game).bad == "{:ok,"
+    assert Typing.mistake(game).backspaces == 5
+    assert Typing.blocked?(game)
+
+    # One Backspace and a correct key only re-fills the wrong run.
+    game = game |> Typing.backspace() |> type_all(",")
+    assert Typing.blocked?(game)
+  end
+
+  test "backspace_to_mistake jumps straight back to the first mistake" do
+    game = Typing.new("{:ok, order}") |> type_all("[:ok,") |> Typing.backspace_to_mistake()
+
+    assert game.pos == 0
+    assert Typing.mistake(game) == nil
+
+    game = type_all(game, "{:ok, order}")
+    assert Typing.finished?(game)
+  end
+
+  test "backspace_to_mistake without a mistake deletes one character" do
+    game = Typing.new("abc") |> type_all("ab") |> Typing.backspace_to_mistake()
+
+    assert game.pos == 1
   end
 
   test "mistake reports the key pressed and the key the snippet wanted" do
     game = Typing.new("f(x)") |> type_all("f9")
 
-    assert Typing.mistake(game) == %{typed: "9", expected: "(", blocked: false}
+    assert Typing.mistake(game) == %{typed: "9", expected: "(", blocked: false, backspaces: 1}
 
     game = Typing.backspace(game)
     assert Typing.mistake(game) == nil
@@ -52,11 +80,11 @@ defmodule PipeRacer.TypingTest do
     assert Typing.mistake(game).expected == "Space"
 
     game = Typing.new("ab\nc") |> type_all("ab ")
-    assert Typing.mistake(game) == %{typed: "Space", expected: "Enter", blocked: false}
+    assert %{typed: "Space", expected: "Enter", blocked: false} = Typing.mistake(game)
   end
 
   test "typing is blocked after the wrong run, or at the end with a mistake" do
-    game = Typing.new(String.duplicate("a", 20)) |> type_all(String.duplicate("b", 8))
+    game = Typing.new(String.duplicate("a", 20)) |> type_all(String.duplicate("b", 5))
     assert Typing.blocked?(game)
     assert Typing.mistake(game).blocked
 
