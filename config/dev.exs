@@ -44,8 +44,10 @@ config :pipe_racer, PipeRacerWeb.Endpoint,
   live_reload: [
     web_console_logger: true,
     patterns: [
-      # Static assets, except user uploads
-      ~r"priv/static/(?!uploads/).*\.(js|css|png|jpeg|jpg|gif|svg)$",
+      # Static assets, except user uploads and Hologram bundles. Hologram
+      # reloads its own pages; letting Phoenix reload on bundle writes too
+      # sent the page into a reload loop.
+      ~r"priv/static/(?!uploads/|hologram/).*\.(js|css|png|jpeg|jpg|gif|svg)$",
       # Router, Controllers, LiveViews and LiveComponents
       ~r"lib/pipe_racer_web/router\.ex$",
       ~r"lib/pipe_racer_web/(controllers|live|components)/.*\.(ex|heex)$"
