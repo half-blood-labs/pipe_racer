@@ -36,7 +36,8 @@ defmodule PipeRacerWeb.LobbyPage do
   end
 
   def action(:join, %{event: event}, component) do
-    code = event |> Map.get(:code, "") |> String.trim() |> String.downcase()
+    # Submitted form fields arrive with string keys.
+    code = event |> Map.get("code", "") |> String.trim() |> String.downcase()
 
     if Race.valid_code?(code) do
       put_page(component, PipeRacerWeb.RacePage, room: code)
