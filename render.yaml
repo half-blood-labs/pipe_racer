@@ -1,0 +1,19 @@
+# Render Blueprint: New > Blueprint in the Render dashboard, pick this repo.
+#
+# Free plan: 512 MB, sleeps after 15 minutes without traffic and takes about
+# a minute to wake. Race rooms live in memory, so they reset when it sleeps.
+services:
+  - type: web
+    name: pipe-racer
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    autoDeployTrigger: commit
+    envVars:
+      # Render's generateValue is only 44 characters and Phoenix needs 64+,
+      # so Render asks for this once when the Blueprint is created.
+      # Generate one with: mix phx.gen.secret
+      - key: SECRET_KEY_BASE
+        sync: false

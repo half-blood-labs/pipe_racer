@@ -46,11 +46,14 @@ mix test
 
 ## Deploying
 
-`fly.toml` runs one 256 MB machine that stops when idle. Rooms live in memory,
-so keep it to a single machine:
+`render.yaml` is a Render Blueprint for the free plan (512 MB, Frankfurt).
+In the Render dashboard choose New, then Blueprint, and pick this repo. Render
+asks for `SECRET_KEY_BASE` once; generate one with:
 
 ```bash
-fly deploy --ha=false
+mix phx.gen.secret
 ```
 
-`SECRET_KEY_BASE` must be set as a Fly secret.
+Every push to `master` redeploys. The free plan sleeps after 15 minutes
+without traffic and takes about a minute to wake. Race rooms live in memory,
+so they reset when it sleeps, and it must stay a single instance.
