@@ -3,9 +3,9 @@ defmodule PipeRacer.Race.Room do
   One race room: who is in it, which snippet they race on, and how far each
   player got. Each room is a process, found by its code through a Registry.
 
-  Players are keyed by Hologram's `instance_id` (one browser tab). Tabs that
-  close never say goodbye, so every player pings the room and anyone silent
-  for `@stale_ms` is dropped.
+  Players are keyed by a per-tab id the browser keeps across refreshes. Tabs
+  that close never say goodbye, so every player pings the room and anyone
+  silent for `@stale_ms` is dropped.
   """
   use GenServer, restart: :transient
 
@@ -14,7 +14,8 @@ defmodule PipeRacer.Race.Room do
   @registry PipeRacer.Race.Registry
   @supervisor PipeRacer.Race.Supervisor
 
-  @stale_ms 45_000
+  # Tabs ping every 5s, so three missed pings means the tab is gone.
+  @stale_ms 15_000
   @idle_timeout :timer.minutes(30)
   @max_players 8
 

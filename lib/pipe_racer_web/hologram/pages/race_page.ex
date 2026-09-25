@@ -1,5 +1,6 @@
 defmodule PipeRacerWeb.RacePage do
   use Hologram.Page
+  use Hologram.JS
 
   alias Hologram.UI.Link
   alias PipeRacer.Race
@@ -26,27 +27,25 @@ defmodule PipeRacerWeb.RacePage do
   # Progress is sent to the room in steps of this many percent, not per key.
   @report_step 4
 
+  # The player joins from the browser (see :join), not here: a player is a
+  # tab, identified by an id kept in sessionStorage so a refresh is the same
+  # player again. Hologram's instance_id is new on every refresh, which left a
+  # ghost racer behind each time.
   def init(params, component, server) do
     code = params.room
-    name = get_session(server, :name) || Race.random_name()
-    server = put_session(server, :name, name)
-    component = put_state(component, initial_state(code, server.instance_id))
+    server = put_session(server, :name, get_session(server, :name) || Race.random_name())
+    component = put_state(component, initial_state(code))
 
-    with true <- Race.valid_code?(code),
-         {:ok, room} <- Room.join(code, server.instance_id, name) do
+    if Race.valid_code?(code) do
       component =
         component
         |> put_state(:share_url, PipeRacerWeb.Endpoint.url() <> "/race/" <> code)
-        |> join_room(room)
-        |> put_action(:announce)
+        |> join_room(Room.snapshot(code))
+        |> put_action(:join)
 
       {component, put_subscription(server, {:race, code})}
     else
-      false ->
-        {put_state(component, :error, "That room code doesn't look right."), server}
-
-      {:error, :full} ->
-        {put_state(component, :error, "This room is full, 8 racers max."), server}
+      {put_state(component, :error, "That room code doesn't look right."), server}
     end
   end
 
@@ -91,11 +90,11 @@ defmodule PipeRacerWeb.RacePage do
             progress={Typing.progress(@game)}
           />
           <CodeView
-        segments={Typing.segments(@game)}
-        finished={Typing.finished?(@game)}
-        blocked={Typing.blocked?(@game)}
-      />
-      <MistakeHint mistake={Typing.mistake(@game)} />
+            segments={Typing.segments(@game)}
+            finished={Typing.finished?(@game)}
+            blocked={Typing.blocked?(@game)}
+          />
+          <MistakeHint mistake={Typing.mistake(@game)} />
         {/if}
 
         {%if @phase == :done}
@@ -156,19 +155,30 @@ defmodule PipeRacerWeb.RacePage do
     end
   end
 
-  # Tell the room about the new player once the page is live in the browser.
-  # A broadcast queued in init/3 sometimes never reached the other tabs in
-  # testing; a broadcast from a command always did.
-  def action(:announce, _params, component) do
+  # Runs once the page is live in the browser. Joining from a command also
+  # means the join broadcast comes from a command: one queued in init/3
+  # sometimes never reached the other tabs in testing.
+  def action(:join, _params, component) do
+    me = tab_id()
+
     component
-    |> put_command(:announce, room: component.state.room)
+    |> put_state(:me, me)
+    |> put_command(:join, room: component.state.room, player: me)
     |> put_action(name: :ping, delay: @ping_ms)
   end
 
+  def action(:room_full, _params, component) do
+    put_state(component, :error, "This room is full, 8 racers max.")
+  end
+
   def action(:ping, _params, component) do
-    component
-    |> put_command(:ping, room: component.state.room)
-    |> put_action(name: :ping, delay: @ping_ms)
+    if component.state.error do
+      component
+    else
+      component
+      |> put_command(:ping, room: component.state.room, player: component.state.me)
+      |> put_action(name: :ping, delay: @ping_ms)
+    end
   end
 
   # Commands (server)
@@ -178,28 +188,30 @@ defmodule PipeRacerWeb.RacePage do
     put_broadcast(server, {:race, code}, :room_updated, room: room)
   end
 
-  def command(:announce, %{room: code}, server) do
-    room = Room.snapshot(code)
-    put_broadcast(server, {:race, code}, :room_updated, room: room)
+  def command(:join, %{room: code, player: player}, server) do
+    case Room.join(code, player, get_session(server, :name) || Race.random_name()) do
+      {:ok, room} -> put_broadcast(server, {:race, code}, :room_updated, room: room)
+      {:error, :full} -> put_action(server, :room_full)
+    end
   end
 
-  def command(:report, %{room: code, progress: progress, wpm: wpm}, server) do
-    {:ok, room} = Room.report(code, server.instance_id, progress, wpm)
+  def command(:report, %{room: code, player: player, progress: progress, wpm: wpm}, server) do
+    {:ok, room} = Room.report(code, player, progress, wpm)
     put_broadcast(server, {:race, code}, :room_updated, room: room)
   end
 
   # Keeps this tab in the room and, because broadcasts are not guaranteed to
   # arrive, also hands the tab the latest room state every time.
-  def command(:ping, %{room: code}, server) do
-    {:ok, room, changed?} = Room.ping(code, server.instance_id)
+  def command(:ping, %{room: code, player: player}, server) do
+    {:ok, room, changed?} = Room.ping(code, player)
 
     {room, server} =
       cond do
         # Dropped while the tab slept; come back in.
-        not Enum.any?(room.players, &(&1.id == server.instance_id)) ->
+        not Enum.any?(room.players, &(&1.id == player)) ->
           name = get_session(server, :name) || Race.random_name()
 
-          case Room.join(code, server.instance_id, name) do
+          case Room.join(code, player, name) do
             {:ok, room} -> {room, put_broadcast(server, {:race, code}, :room_updated, room: room)}
             {:error, :full} -> {room, server}
           end
@@ -216,10 +228,10 @@ defmodule PipeRacerWeb.RacePage do
 
   # Helpers
 
-  defp initial_state(code, me) do
+  defp initial_state(code) do
     %{
       room: code,
-      me: me,
+      me: nil,
       error: nil,
       share_url: "",
       players: [],
@@ -330,6 +342,7 @@ defmodule PipeRacerWeb.RacePage do
       |> put_state(:phase, if(finished?, do: :done, else: :racing))
       |> put_command(:report,
         room: component.state.room,
+        player: component.state.me,
         progress: if(finished?, do: 100, else: min(progress, 99)),
         wpm: Typing.wpm(game, now)
       )
@@ -342,6 +355,19 @@ defmodule PipeRacerWeb.RacePage do
     case length(players) do
       1 -> "Just you so far. Send the invite link, or start and race yourself."
       n -> "#{n} racers here. Anyone can start."
+    end
+  end
+
+  # A per-tab id that survives a refresh; a new tab gets a new one.
+  defp tab_id do
+    case JS.call(:sessionStorage, :getItem, ["pipe_racer_tab"]) do
+      nil ->
+        id = JS.call(:crypto, :randomUUID, [])
+        JS.call(:sessionStorage, :setItem, ["pipe_racer_tab", id])
+        id
+
+      id ->
+        id
     end
   end
 
