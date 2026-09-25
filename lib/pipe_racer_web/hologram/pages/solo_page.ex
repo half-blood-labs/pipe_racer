@@ -3,7 +3,9 @@ defmodule PipeRacerWeb.SoloPage do
 
   alias PipeRacer.Snippets
   alias PipeRacer.Typing
+  alias PipeRacerWeb.Keys
   alias PipeRacerWeb.Components.CodeView
+  alias PipeRacerWeb.Components.KeyCapture
   alias PipeRacerWeb.Components.Stats
 
   route "/"
@@ -19,14 +21,7 @@ defmodule PipeRacerWeb.SoloPage do
 
   def template do
     ~HOLO"""
-    <window
-      $key_down="key"
-      $key_down.space.prevent_default="noop"
-      $key_down.tab.prevent_default="noop"
-      $key_down.quote.prevent_default="noop"
-      $key_down.slash.prevent_default="noop"
-      $key_down.backspace.prevent_default="noop"
-    />
+    <KeyCapture />
 
     <section class="arena">
       <div class="snippet-title">
@@ -68,11 +63,7 @@ defmodule PipeRacerWeb.SoloPage do
   def action(:noop, _params, component), do: component
 
   def action(:key, %{event: event}, component) do
-    if event.meta_key or event.ctrl_key or event.alt_key do
-      component
-    else
-      handle_key(component, event.key)
-    end
+    handle_key(component, Keys.classify(event))
   end
 
   def action(:restart, _params, component) do
@@ -95,9 +86,9 @@ defmodule PipeRacerWeb.SoloPage do
     end
   end
 
-  defp handle_key(component, "Escape"), do: action(:restart, %{}, component)
+  defp handle_key(component, :escape), do: action(:restart, %{}, component)
 
-  defp handle_key(component, "Enter") do
+  defp handle_key(component, :enter) do
     if Typing.finished?(component.state.game) do
       action(:next, %{}, component)
     else
@@ -105,17 +96,15 @@ defmodule PipeRacerWeb.SoloPage do
     end
   end
 
-  defp handle_key(component, "Backspace") do
+  defp handle_key(component, :backspace) do
     apply_input(component, fn game, _now -> Typing.backspace(game) end)
   end
 
-  defp handle_key(component, key) do
-    if String.length(key) == 1 do
-      apply_input(component, &Typing.type(&1, key, &2))
-    else
-      component
-    end
+  defp handle_key(component, {:char, char}) do
+    apply_input(component, &Typing.type(&1, char, &2))
   end
+
+  defp handle_key(component, :ignore), do: component
 
   defp apply_input(component, fun) do
     now = now()
