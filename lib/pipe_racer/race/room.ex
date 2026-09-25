@@ -18,6 +18,9 @@ defmodule PipeRacer.Race.Room do
   @stale_ms 15_000
   @idle_timeout :timer.minutes(30)
   @max_players 8
+  # Once someone finishes, the others get this long before the race ends, so
+  # one idle racer can't hold the room forever.
+  @finish_window_ms 60_000
 
   # Client API
 
@@ -68,7 +71,18 @@ defmodule PipeRacer.Race.Room do
     state = prune(state)
 
     cond do
+      # A racer who reloads mid-race lost their progress in the browser, so
+      # they sit the rest of it out instead of holding up the finish.
       Map.has_key?(state.players, player_id) ->
+        state =
+          case state.players[player_id] do
+            %{racing: true, place: nil} when state.status == :racing ->
+              state |> put_in([:players, player_id, :racing], false) |> maybe_end_race()
+
+            _player ->
+              state
+          end
+
         reply(state, {:ok, public(state)})
 
       map_size(state.players) >= @max_players ->
@@ -82,7 +96,7 @@ defmodule PipeRacer.Race.Room do
           wpm: 0,
           place: nil,
           # Someone arriving mid-race watches until the next one.
-          racing: state.status == :lobby,
+          racing: state.status != :racing,
           seen_at: now()
         }
 
@@ -133,9 +147,10 @@ defmodule PipeRacer.Race.Room do
         state
       end
 
-    before = map_size(state.players)
+    before = public(state)
     state = prune(state)
-    reply(state, {:ok, public(state), map_size(state.players) != before})
+    after_prune = public(state)
+    reply(state, {:ok, after_prune, after_prune != before})
   end
 
   def handle_call(:snapshot, _from, state), do: reply(state, public(state))
@@ -143,13 +158,41 @@ defmodule PipeRacer.Race.Room do
   @impl true
   def handle_info(:timeout, state), do: {:stop, :normal, state}
 
+  # The finish window ran out: whoever hasn't finished is out of this race.
+  def handle_info({:end_race, race_id}, %{race_id: race_id, status: :racing} = state) do
+    state = %{state | status: :finished}
+    broadcast(state)
+    {:noreply, state, @idle_timeout}
+  end
+
+  def handle_info({:end_race, _race_id}, state), do: {:noreply, state, @idle_timeout}
+
   defp reply(state, result), do: {:reply, result, state, @idle_timeout}
+
+  # Outside a page handler, so this uses Hologram's direct API. Hologram isn't
+  # running in tests, and with nobody to tell there is nothing to send.
+  defp broadcast(state) do
+    if Hologram.enabled?() do
+      Hologram.Realtime.broadcast_action({:race, state.code}, :room_updated, room: public(state))
+    end
+  end
 
   defp finish(state, player_id) do
     finish_order = state.finish_order ++ [player_id]
     state = put_in(state.players[player_id].place, length(finish_order))
     state = %{state | finish_order: finish_order}
 
+    if length(finish_order) == 1 do
+      Process.send_after(self(), {:end_race, state.race_id}, @finish_window_ms)
+    end
+
+    maybe_end_race(state)
+  end
+
+  # The race is over once every racer still in the room has a place. Checked
+  # after a finish and after racers leave, or a race whose last unfinished
+  # racer closed the tab would wait forever.
+  defp maybe_end_race(%{status: :racing} = state) do
     racers = state.players |> Map.values() |> Enum.filter(& &1.racing)
 
     if Enum.all?(racers, &(&1.place != nil)) do
@@ -158,6 +201,8 @@ defmodule PipeRacer.Race.Room do
       state
     end
   end
+
+  defp maybe_end_race(state), do: state
 
   # Two tabs of one browser share a session name; keep them apart.
   defp unique_name(state, name) do
@@ -174,7 +219,7 @@ defmodule PipeRacer.Race.Room do
   defp prune(state) do
     cutoff = now() - @stale_ms
     players = state.players |> Enum.filter(fn {_id, p} -> p.seen_at >= cutoff end) |> Map.new()
-    %{state | players: players}
+    maybe_end_race(%{state | players: players})
   end
 
   # What clients get to see: no timestamps, players sorted for display.

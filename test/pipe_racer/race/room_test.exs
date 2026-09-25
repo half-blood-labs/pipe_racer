@@ -8,6 +8,11 @@ defmodule PipeRacer.Race.RoomTest do
     %{code: Race.new_code()}
   end
 
+  defp room_pid(code) do
+    [{pid, _}] = Registry.lookup(PipeRacer.Race.Registry, code)
+    pid
+  end
+
   test "players join a lobby and race once it starts", %{code: code} do
     {:ok, room} = Room.join(code, "tab-a", "swift-atom")
     assert room.status == :lobby
@@ -59,6 +64,64 @@ defmodule PipeRacer.Race.RoomTest do
     {:ok, room} = Room.join(code, "tab-b", "swift-atom")
 
     assert room.players |> Enum.map(& &1.name) |> Enum.sort() == ["swift-atom", "swift-atom-2"]
+  end
+
+  test "a race ends when its last unfinished racer leaves", %{code: code} do
+    {:ok, _} = Room.join(code, "tab-a", "a")
+    {:ok, _} = Room.join(code, "tab-b", "b")
+    {:ok, _} = Room.start_race(code)
+    {:ok, _} = Room.report(code, "tab-a", 100, 70)
+
+    # tab-b stops pinging; simulate it going stale.
+    pid = room_pid(code)
+    minute_ago = System.monotonic_time(:millisecond) - 60_000
+    :sys.replace_state(pid, &put_in(&1.players["tab-b"].seen_at, minute_ago))
+
+    {:ok, room, changed?} = Room.ping(code, "tab-a")
+    assert changed?
+    assert room.status == :finished
+    assert Enum.map(room.players, & &1.name) == ["a"]
+  end
+
+  test "a racer who reloads mid-race sits it out instead of blocking the finish",
+       %{code: code} do
+    {:ok, _} = Room.join(code, "tab-a", "a")
+    {:ok, _} = Room.join(code, "tab-b", "b")
+    {:ok, _} = Room.start_race(code)
+    {:ok, _} = Room.report(code, "tab-a", 100, 70)
+
+    {:ok, room} = Room.join(code, "tab-b", "b")
+    assert room.status == :finished
+    assert %{racing: false} = Enum.find(room.players, &(&1.name == "b"))
+  end
+
+  test "the race ends when the finish window runs out", %{code: code} do
+    {:ok, _} = Room.join(code, "tab-a", "a")
+    {:ok, _} = Room.join(code, "tab-b", "b")
+    {:ok, room} = Room.start_race(code)
+    {:ok, _} = Room.report(code, "tab-a", 100, 70)
+
+    send(room_pid(code), {:end_race, room.race_id})
+    assert Room.snapshot(code).status == :finished
+  end
+
+  test "a finish window from an earlier race is ignored", %{code: code} do
+    {:ok, _} = Room.join(code, "tab-a", "a")
+    {:ok, _} = Room.start_race(code)
+    {:ok, room} = Room.start_race(code)
+
+    send(room_pid(code), {:end_race, room.race_id - 1})
+    assert Room.snapshot(code).status == :racing
+  end
+
+  test "joining after a race has finished counts you in", %{code: code} do
+    {:ok, _} = Room.join(code, "tab-a", "a")
+    {:ok, _} = Room.start_race(code)
+    {:ok, _} = Room.report(code, "tab-a", 100, 70)
+    {:ok, room} = Room.join(code, "tab-new", "new")
+
+    assert room.status == :finished
+    assert %{racing: true} = Enum.find(room.players, &(&1.name == "new"))
   end
 
   test "a room is full at eight players", %{code: code} do
