@@ -11,8 +11,8 @@ defmodule PipeRacer.Application do
       PipeRacerWeb.Telemetry,
       {DNSCluster, query: Application.get_env(:pipe_racer, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: PipeRacer.PubSub},
-      # Start a worker by calling: PipeRacer.Worker.start_link(arg)
-      # {PipeRacer.Worker, arg},
+      {Registry, keys: :unique, name: PipeRacer.Race.Registry},
+      {DynamicSupervisor, name: PipeRacer.Race.Supervisor, strategy: :one_for_one},
       # Start to serve requests, typically the last entry
       PipeRacerWeb.Endpoint
     ]
