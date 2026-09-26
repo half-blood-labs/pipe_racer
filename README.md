@@ -27,6 +27,8 @@ wrong, cursor, pending) rather than one per character.
   Option (or Ctrl/Cmd) + Backspace jumps there in one press.
 - Enter auto-skips the next line's indentation, like an editor.
 - In a race, progress is sent to the room every 4%, not on every key.
+- On a phone, tap the code to bring up the keyboard. Autocorrect is off, and
+  curly quotes from the keyboard count as plain ones.
 
 ## Running locally
 

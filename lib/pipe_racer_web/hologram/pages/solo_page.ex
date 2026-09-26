@@ -8,6 +8,7 @@ defmodule PipeRacerWeb.SoloPage do
   alias PipeRacerWeb.Components.KeyCapture
   alias PipeRacerWeb.Components.MistakeHint
   alias PipeRacerWeb.Components.Stats
+  alias PipeRacerWeb.Components.TypingField
 
   route "/"
 
@@ -52,7 +53,8 @@ defmodule PipeRacerWeb.SoloPage do
         </div>
       {%else}
         {%if not Typing.started?(@game)}
-          <div class="hint">Start typing to start the clock. <kbd>Enter</kbd> auto-indents.</div>
+          <div class="hint pointer-only">Start typing to start the clock. <kbd>Enter</kbd> auto-indents.</div>
+          <div class="hint touch-only">Tap the code to bring up the keyboard.</div>
         {/if}
         {%if Typing.started?(@game) and Typing.mistake(@game) == nil}
           <div class="hint">Type the code. Mistakes must be fixed with <kbd>Backspace</kbd>. <kbd>Esc</kbd> restarts.</div>
@@ -71,6 +73,11 @@ defmodule PipeRacerWeb.SoloPage do
 
   def action(:key, %{event: event}, component) do
     handle_key(component, Keys.classify(event))
+  end
+
+  def action(:typed, %{event: %{value: value}}, component) do
+    TypingField.reset()
+    Enum.reduce(Keys.classify_input(value), component, &handle_key(&2, &1))
   end
 
   def action(:restart, _params, component) do

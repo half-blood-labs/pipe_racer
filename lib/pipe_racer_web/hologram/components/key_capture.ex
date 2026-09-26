@@ -3,6 +3,7 @@ defmodule PipeRacerWeb.Components.KeyCapture do
   Listens for keys on the whole window and sends them to the page as a
   `:key` action. Space, Tab, quote, slash and Backspace keep their native
   behaviour from scrolling the page, moving focus or opening quick find.
+  Keys typed into the `TypingField` stop there and never reach this.
   """
   use Hologram.Component
 

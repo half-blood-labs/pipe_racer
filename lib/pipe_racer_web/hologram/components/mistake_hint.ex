@@ -18,7 +18,7 @@ defmodule PipeRacerWeb.Components.MistakeHint do
         You typed <kbd>{@mistake.typed}</kbd> where <kbd>{@mistake.expected}</kbd> goes.
         <span class="fix">
           {%if @mistake.blocked}<strong>Go back to it:</strong>{%else}Go back to it:{/if}
-          <kbd>Backspace</kbd> ×{@mistake.backspaces}, or <kbd>⌥ Backspace</kbd> once.
+          <kbd>Backspace</kbd> ×{@mistake.backspaces}<span class="pointer-only">, or <kbd>⌥ Backspace</kbd> once</span>.
         </span>
       </div>
     {/if}

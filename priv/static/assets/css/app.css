@@ -27,6 +27,8 @@ body {
 
 body {
   min-height: 100vh;
+  /* The visible height on phones, which shrinks when the keyboard is up. */
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
 }
@@ -171,6 +173,39 @@ main {
   font-feature-settings: "calt" 0, "liga" 0;
 }
 
+.code-box {
+  position: relative;
+}
+
+/* Phones show a keyboard only for a focused text field, so an invisible one
+   covers the code: tapping the code brings the keyboard up. */
+.typing-field {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: transparent;
+  caret-color: transparent;
+  opacity: 0;
+  resize: none;
+  cursor: text;
+  -webkit-tap-highlight-color: transparent;
+  /* Safari zooms the page in to focus a field with smaller text. */
+  font-size: 16px;
+}
+
+.typing-field:focus {
+  outline: none;
+}
+
+.code-box:focus-within .code:not(.finished):not(.blocked) {
+  border-color: var(--accent);
+}
+
 .code .ok {
   color: var(--text);
 }
@@ -259,6 +294,20 @@ button {
 button:hover {
   border-color: var(--accent);
   color: var(--accent);
+}
+
+.touch-only {
+  display: none;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .touch-only {
+    display: block;
+  }
+
+  .pointer-only {
+    display: none;
+  }
 }
 
 @media (max-width: 640px) {

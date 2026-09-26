@@ -12,6 +12,7 @@ defmodule PipeRacerWeb.RacePage do
   alias PipeRacerWeb.Components.MistakeHint
   alias PipeRacerWeb.Components.PlayerList
   alias PipeRacerWeb.Components.Stats
+  alias PipeRacerWeb.Components.TypingField
   alias PipeRacerWeb.Keys
 
   route "/race/:room"
@@ -95,6 +96,9 @@ defmodule PipeRacerWeb.RacePage do
             blocked={Typing.blocked?(@game)}
           />
           <MistakeHint mistake={Typing.mistake(@game)} />
+          {%if not Typing.started?(@game)}
+            <div class="hint touch-only">Tap the code to bring up the keyboard.</div>
+          {/if}
         {/if}
 
         {%if @phase == :done}
@@ -138,11 +142,12 @@ defmodule PipeRacerWeb.RacePage do
   end
 
   def action(:key, %{event: event}, component) do
-    if component.state.phase == :racing do
-      handle_key(component, Keys.classify(event))
-    else
-      component
-    end
+    type(component, [Keys.classify(event)])
+  end
+
+  def action(:typed, %{event: %{value: value}}, component) do
+    TypingField.reset()
+    type(component, Keys.classify_input(value))
   end
 
   def action(:tick, %{run: run}, component) do
@@ -297,6 +302,15 @@ defmodule PipeRacerWeb.RacePage do
       |> put_action(name: :count, params: %{race_id: room.race_id}, delay: 1_000)
     else
       put_state(component, :phase, :watching)
+    end
+  end
+
+  # Keys only count during the race itself.
+  defp type(component, commands) do
+    if component.state.phase == :racing do
+      Enum.reduce(commands, component, &handle_key(&2, &1))
+    else
+      component
     end
   end
 
