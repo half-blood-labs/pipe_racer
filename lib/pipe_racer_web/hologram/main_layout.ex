@@ -35,7 +35,12 @@ defmodule PipeRacerWeb.MainLayout do
           <slot />
         </main>
         <footer class="footer">
-          Pure Elixir in the browser, built with <a href="https://hologram.page">Hologram</a>.
+          <div>Pure Elixir in the browser, built with <a href="https://hologram.page">Hologram</a>.</div>
+          <div class="footer-links">
+            <span>Made by Junaid</span>
+            <a href="https://github.com/ijunaid8989" target="_blank" rel="noopener">GitHub</a>
+            <a href="https://www.linkedin.com/in/iamjunnii/" target="_blank" rel="noopener">LinkedIn</a>
+          </div>
         </footer>
       </body>
     </html>
